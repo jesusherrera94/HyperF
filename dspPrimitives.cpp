@@ -1,4 +1,4 @@
-#include "dsp_primitives.h"
+#include "dspPrimitives.h"
 #include <cmath>
 
 dsp::BiquadFilter::BiquadFilter() = default;

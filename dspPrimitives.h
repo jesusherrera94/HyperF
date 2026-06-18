@@ -1,6 +1,4 @@
 #pragma once
-#include <cmath>
-#include <algorithm>
 
 namespace dsp {
 
@@ -13,7 +11,7 @@ namespace dsp {
             void calculateNotch(float sampleRate, float frequency, float q);
 
             // Processes a single sample
-            inline float process(float input);
+            float process(float input);
 
         private:
             void normalize();
@@ -28,7 +26,7 @@ namespace dsp {
         public:
             // Applies Full-Wave Rectification and Asymmetrical Clipping
             // f(x) = clip(|x * gain|)
-            inline float process(float input, float gain) const;
+            float process(float input, float gain) const;
     };
 
 } // namespace dsp
