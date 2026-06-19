@@ -14,11 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// ### Uncomment if IntelliSense can't resolve DaisySP-LGPL classes ###
-// #include "daisysp-lgpl.h"
-
-#include "daisysp.h"
-#include "hothouse.h"
 #include "FuzzProcessor.h"
 #include "HotHouseAdapter.h"
 #include <memory>
