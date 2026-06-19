@@ -80,6 +80,20 @@ float dsp::FuzzEngine::process(float input, float gain) const {
      return rectified;
 }
 
+float dsp::FuzzEngine::processFuzzII(float input, float gain) const {
+    float gainMultiplier = 1.0f + gain * 49.0f;
+    float amplified = input * gainMultiplier;
+
+    const float threshold = 0.7f;
+    float clipped = std::fmax(std::fmin(amplified, threshold), -threshold);
+    if (clipped < 0.0) {
+        clipped = clipped * 0.85; // Slight imbalance creates even harmonics
+    }
+
+    return clipped;
+}
+
+
 void dsp::DCBlocker::prepare(float sampleRate, float cutoffHz) {
     // Map the desired cutoff to the one-pole's pole position.
     R_  = 1.0f - (2.0f * M_PI * cutoffHz / sampleRate);

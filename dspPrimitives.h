@@ -33,6 +33,7 @@ namespace dsp {
             // Applies Full-Wave Rectification and Asymmetrical Clipping
             // f(x) = clip(|x * gain|)
             float process(float input, float gain) const;
+            float processFuzzII(float input, float gain) const;
     };
 
     // One-pole DC blocker (high-pass ~10-20 Hz).

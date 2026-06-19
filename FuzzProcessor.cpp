@@ -52,7 +52,7 @@ float HyperFuzzDSP::processSample(float input) {
                 break;
 
             case FuzzMode::Fuzz_II:
-                output = fuzzEngine_.process(input, currentGain);
+                output = fuzzEngine_.processFuzzII(input, currentGain);
                 // Apply massive 16dB cut at 1.2kHz
                 output = notchFilter_->process(output);
                 break;
