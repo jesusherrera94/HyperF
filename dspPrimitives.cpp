@@ -62,7 +62,7 @@ void dsp::BiquadFilter::normalize() {
     // Ensures coefficients are stable
     b0 /= a0; b1 /= a0; b2 /= a0;
     a1 /= a0; a2 /= a0;
-    a0 = 1.0f;
+    // a0 = 1.0f;
 }
 
 float dsp::FuzzEngine::process(float input, float gain) const {
