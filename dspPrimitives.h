@@ -35,4 +35,18 @@ namespace dsp {
             float process(float input, float gain) const;
     };
 
+    // One-pole DC blocker (high-pass ~10-20 Hz).
+    // Removes the DC offset introduced by full-wave rectification in FuzzEngine.
+    class DCBlocker {
+        public:
+            DCBlocker() = default;
+            // cutoffHz ~ 20 Hz strips DC/subsonics without thinning the low end
+            void prepare(float sampleRate, float cutoffHz = 20.0f);
+            float process(float input);
+        private:
+            float R_  = 0.997f;  // pole position (closer to 1.0 => lower cutoff)
+            float x1_ = 0.0f;    // previous input  x[n-1]
+            float y1_ = 0.0f;    // previous output y[n-1]
+    };
+
 } // namespace dsp

@@ -29,7 +29,7 @@ private:
     std::unique_ptr<dsp::BiquadFilter> notchFilter_;
     std::unique_ptr<dsp::BiquadFilter> bassShelf_;    // ~110 Hz low shelf
     std::unique_ptr<dsp::BiquadFilter> trebleShelf_;  // ~750 Hz high shelf
-    std::unique_ptr<dsp::BiquadFilter> dcBlocker_;    // remove rectifier DC (see review)
+    dsp::DCBlocker dcBlocker_;
 
     // Atomic variables for thread-safe parameter updating
     std::atomic<float> level_{0.5f};

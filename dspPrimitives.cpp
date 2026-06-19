@@ -79,3 +79,17 @@ float dsp::FuzzEngine::process(float input, float gain) const {
 
      return rectified;
 }
+
+void dsp::DCBlocker::prepare(float sampleRate, float cutoffHz) {
+    // Map the desired cutoff to the one-pole's pole position.
+    R_  = 1.0f - (2.0f * M_PI * cutoffHz / sampleRate);
+    x1_ = 0.0f;
+    y1_ = 0.0f;
+}
+float dsp::DCBlocker::process(float input) {
+    // y[n] = x[n] - x[n-1] + R * y[n-1]
+    float output = input - x1_ + R_ * y1_;
+    x1_ = input;
+    y1_ = output;
+    return output;
+}

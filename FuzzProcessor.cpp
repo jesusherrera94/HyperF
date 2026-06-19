@@ -11,6 +11,7 @@ HyperFuzzDSP::HyperFuzzDSP(float sampleRate) : sampleRate_(sampleRate) {
     notchFilter_->calculateNotch(sampleRate_, 1200.0f, 1.5f); 
     bassShelf_ ->calculateLowShelf(sampleRate_, 110.0f, 0.0f);   // flat at startup
     trebleShelf_->calculateHighShelf(sampleRate_, 750.0f, 0.0f);
+    dcBlocker_.prepare(sampleRate_, 20.0f);
 }
 
 void HyperFuzzDSP::setLevel(float level) {
@@ -62,9 +63,12 @@ float HyperFuzzDSP::processSample(float input) {
                 break;
         }
 
+        // Remove rectifier DC offset before tone shaping.
+        output = dcBlocker_.process(output);
+
         // Active EQ (Bass/Treble)
         output = bassShelf_->process(output);
         output = trebleShelf_->process(output);
-        
+
         return output * currentLevel;
 }
