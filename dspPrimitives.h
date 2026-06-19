@@ -9,6 +9,12 @@ namespace dsp {
 
             // Calculates coefficients for a Notch Filter (Used for Fuzz II 1.2kHz scoop)
             void calculateNotch(float sampleRate, float frequency, float q);
+            
+            // Low shelf (Bass): boosts/cuts below `frequency` by `gainDb`
+            void calculateLowShelf(float sampleRate, float frequency, float gainDb);
+
+            // High shelf (Treble): boosts/cuts above `frequency` by `gainDb`
+            void calculateHighShelf(float sampleRate, float frequency, float gainDb);
 
             // Processes a single sample
             float process(float input);

@@ -1,71 +1,36 @@
-#include "daisy_seed.h"
-#include "daisysp.h"
-#include "FuzzProcessor.h"
+#include "HotHouseAdapter.h"
 
-using namespace daisy;
-using namespace daisysp;
-
-// Hardware instance
-DaisySeed hardware;
-
-// Smart pointer to manage the DSP engine's lifecycle (RAII)
-std::unique_ptr<HyperFuzzDSP> fuzzDSP;
-
-// Audio Callback
-void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        // Process Left Channel
-        float processed_L = fuzzDSP->processSample(in[0][i]);
-        out[0][i] = processed_L;
-
-        // Process Right Channel (or mirror Left for Mono)
-        out[1][i] = processed_L; 
+using clevelandmusicco::Hothouse;
+using daisy::AudioHandle;
+HyperFuzzDSP* HothouseAdapter::audioDsp_ = nullptr;
+HothouseAdapter::HothouseAdapter(Hothouse& hw, HyperFuzzDSP& dsp)
+    : hw_(hw), dsp_(dsp) {
+    // Bind the instance for the static audio callback.
+    audioDsp_ = &dsp;
+}
+void HothouseAdapter::updateControls() {
+    // Refresh ADC + switch readings before mapping.
+    hw_.ProcessAllControls();
+    // Hothouse mapping (per spec):
+    dsp_.setLevel (hw_.GetKnobValue(Hothouse::KNOB_1));            // Level   0..1
+    dsp_.setBass  (hw_.GetKnobValue(Hothouse::KNOB_2));            // Bass    0..1 (0.5 flat)
+    dsp_.setTreble(hw_.GetKnobValue(Hothouse::KNOB_3));            // Treble  0..1 (0.5 flat)
+    // Gain knob scaled 1.0..50.0 for the heavy FZ-2 compression range.
+    dsp_.setGain  (1.0f + hw_.GetKnobValue(Hothouse::KNOB_4) * 49.0f);
+    // 3-way rotary -> three voices.
+    switch (hw_.GetToggleswitchPosition(Hothouse::TOGGLESWITCH_1)) {
+        case Hothouse::TOGGLESWITCH_UP:     dsp_.setMode(FuzzMode::Fuzz_I);     break;
+        case Hothouse::TOGGLESWITCH_MIDDLE: dsp_.setMode(FuzzMode::Fuzz_II);    break;
+        case Hothouse::TOGGLESWITCH_DOWN:   dsp_.setMode(FuzzMode::Gain_Boost); break;
+        default: break;
     }
 }
-
-// Helper to map Hothouse ADC values to DSP parameters
-void mapHardwareControls() {
-    // KNOB_1 -> Level (Mapped 0.0 to 1.0)
-    float levelInput = hardware.adc.GetFloat(0); // Assuming ADC 0 is KNOB_1
-    fuzzDSP->setLevel(levelInput);
-
-    // KNOB_3 -> Gain (Mapped 1.0 to 50.0 for massive compression)
-    float gainInput = hardware.adc.GetFloat(2); // Assuming ADC 2 is KNOB_3
-    fuzzDSP->setGain(1.0f + (gainInput * 49.0f)); 
-
-    // SWITCH_1 -> Mode
-    // Assuming a 3-way toggle mapped to a specific GPIO reading
-    // Simplified logic: Using an arbitrary GPIO read for demonstration
-    bool switchUp = hardware.system.GetPin(12); // Example GPIO
-    bool switchDown = hardware.system.GetPin(13); // Example GPIO
-
-    if (switchUp) {
-        fuzzDSP->setMode(FuzzMode::Fuzz_I);
-    } else if (switchDown) {
-        fuzzDSP->setMode(FuzzMode::Fuzz_II);
-    } else {
-        fuzzDSP->setMode(FuzzMode::Gain_Boost);
-    }
-}
-
-int main(void) {
-    // 1. Initialize Hardware
-    hardware.Init();
-    hardware.SetAudioBlockSize(48); // Standard block size for low latency
-    float sampleRate = hardware.AudioSampleRate();
-
-    // 2. Initialize DSP Engine via Smart Pointer
-    fuzzDSP = std::make_unique<HyperFuzzDSP>(sampleRate);
-
-    // 3. Start Audio processing
-    hardware.StartAudio(AudioCallback);
-
-    // 4. Main hardware loop
-    while(1) {
-        // Read hardware states and update the DSP atomic variables
-        mapHardwareControls();
-
-        // Delay to prevent overwhelming the ADC
-        System::Delay(10);
+void HothouseAdapter::AudioCallback(AudioHandle::InputBuffer in,
+                                    AudioHandle::OutputBuffer out,
+                                    size_t size) {
+    for (size_t i = 0; i < size; ++i) {
+        float processed = audioDsp_->processSample(in[0][i]);
+        out[0][i] = processed;  // Left
+        out[1][i] = processed;  // Right (mono -> dual mono)
     }
 }

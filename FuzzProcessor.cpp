@@ -5,8 +5,12 @@
 
 HyperFuzzDSP::HyperFuzzDSP(float sampleRate) : sampleRate_(sampleRate) {
     notchFilter_ = std::make_unique<dsp::BiquadFilter>();
-        // Initialize Notch for Fuzz II at 1.2kHz
+    bassShelf_   = std::make_unique<dsp::BiquadFilter>();
+    trebleShelf_ = std::make_unique<dsp::BiquadFilter>();
+    // Initialize Notch for Fuzz II at 1.2kHz
     notchFilter_->calculateNotch(sampleRate_, 1200.0f, 1.5f); 
+    bassShelf_ ->calculateLowShelf(sampleRate_, 110.0f, 0.0f);   // flat at startup
+    trebleShelf_->calculateHighShelf(sampleRate_, 750.0f, 0.0f);
 }
 
 void HyperFuzzDSP::setLevel(float level) {
@@ -20,6 +24,17 @@ void HyperFuzzDSP::setGain(float gain) {
 void HyperFuzzDSP::setMode(FuzzMode mode) {
     mode_.store(mode, std::memory_order_relaxed);
 }
+
+void HyperFuzzDSP::setBass(float bass) {
+    bass_.store(bass, std::memory_order_relaxed);
+    // Recompute coefficients at control rate (not in the audio thread)
+    bassShelf_->calculateLowShelf(sampleRate_, 110.0f, (bass - 0.5f) * 24.0f);
+}
+void HyperFuzzDSP::setTreble(float treble) {
+    treble_.store(treble, std::memory_order_relaxed);
+    trebleShelf_->calculateHighShelf(sampleRate_, 750.0f, (treble - 0.5f) * 24.0f);
+}
+
 
 float HyperFuzzDSP::processSample(float input) {
     // Load atomic variables with relaxed memory order for fast thread-safe reading
@@ -47,7 +62,9 @@ float HyperFuzzDSP::processSample(float input) {
                 break;
         }
 
-        // Apply active EQ here (Bass/Treble)
-
+        // Active EQ (Bass/Treble)
+        output = bassShelf_->process(output);
+        output = trebleShelf_->process(output);
+        
         return output * currentLevel;
 }

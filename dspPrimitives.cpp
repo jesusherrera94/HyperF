@@ -18,26 +18,54 @@ void dsp::BiquadFilter::calculateNotch(float sampleRate, float frequency, float 
                 normalize();
 }
 
-inline float dsp::BiquadFilter::process(float input) {
-    float output = (b0 / a0) * input + (b1 / a0) * z1 + (b2 / a0) * z2
-                            - (a1 / a0) * y1 - (a2 / a0) * y2;
-                
-                // Update state
-                z2 = z1;
-                z1 = input;
-                y2 = y1;
-                y1 = output;
+void dsp::BiquadFilter::calculateLowShelf(float sampleRate, float frequency, float gainDb) {
+    // A is the linear amplitude derived from the requested dB gain (sqrt because shelf math uses A^2)
+    float A     = std::pow(10.0f, gainDb / 40.0f);
+    float w0    = 2.0f * M_PI * frequency / sampleRate;
+    float cosw0 = std::cos(w0);
+    float sinw0 = std::sin(w0);
+    float alpha = sinw0 / 2.0f * std::sqrt(2.0f); // Q ~ 0.707, gentle shelf
+    float twoSqrtAalpha = 2.0f * std::sqrt(A) * alpha;
+    b0 =      A * ((A + 1.0f) - (A - 1.0f) * cosw0 + twoSqrtAalpha);
+    b1 = 2.0f * A * ((A - 1.0f) - (A + 1.0f) * cosw0);
+    b2 =      A * ((A + 1.0f) - (A - 1.0f) * cosw0 - twoSqrtAalpha);
+    a0 =          (A + 1.0f) + (A - 1.0f) * cosw0 + twoSqrtAalpha;
+    a1 = -2.0f *  ((A - 1.0f) + (A + 1.0f) * cosw0);
+    a2 =          (A + 1.0f) + (A - 1.0f) * cosw0 - twoSqrtAalpha;
+    normalize();
+}
 
-                return output;
+void dsp::BiquadFilter::calculateHighShelf(float sampleRate, float frequency, float gainDb) {
+    float A     = std::pow(10.0f, gainDb / 40.0f);
+    float w0    = 2.0f * M_PI * frequency / sampleRate;
+    float cosw0 = std::cos(w0);
+    float sinw0 = std::sin(w0);
+    float alpha = sinw0 / 2.0f * std::sqrt(2.0f);
+    float twoSqrtAalpha = 2.0f * std::sqrt(A) * alpha;
+    b0 =      A * ((A + 1.0f) + (A - 1.0f) * cosw0 + twoSqrtAalpha);
+    b1 = -2.0f * A * ((A - 1.0f) + (A + 1.0f) * cosw0);
+    b2 =      A * ((A + 1.0f) + (A - 1.0f) * cosw0 - twoSqrtAalpha);
+    a0 =          (A + 1.0f) - (A - 1.0f) * cosw0 + twoSqrtAalpha;
+    a1 = 2.0f *   ((A - 1.0f) - (A + 1.0f) * cosw0);
+    a2 =          (A + 1.0f) - (A - 1.0f) * cosw0 - twoSqrtAalpha;
+    normalize();
+}
+
+float dsp::BiquadFilter::process(float input) {
+    float output = b0 * input + b1 * z1 + b2 * z2 - a1 * y1 - a2 * y2;
+    z2 = z1; z1 = input;
+    y2 = y1; y1 = output;
+    return output;
 }
 
 void dsp::BiquadFilter::normalize() {
     // Ensures coefficients are stable
     b0 /= a0; b1 /= a0; b2 /= a0;
     a1 /= a0; a2 /= a0;
+    a0 = 1.0f;
 }
 
-inline float dsp::FuzzEngine::process(float input, float gain) const {
+float dsp::FuzzEngine::process(float input, float gain) const {
      // 1. Pre-gain staging
      float amplified = input * gain;
                 
@@ -50,4 +78,4 @@ inline float dsp::FuzzEngine::process(float input, float gain) const {
      if (rectified < -0.6f) rectified = -0.6f;
 
      return rectified;
-};
+}
