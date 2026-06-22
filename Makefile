@@ -10,7 +10,7 @@ LIBDAISY_DIR ?= $(HOTHOUSE_DIR)/libdaisy
 DAISYSP_DIR ?= $(HOTHOUSE_DIR)/DaisySP
 
 # Sources and Hothouse header files
-CPP_SOURCES = $(TARGET).cpp $(HOTHOUSE_DIR)/src/hothouse.cpp
+CPP_SOURCES = $(TARGET).cpp HotHouseAdapter.cpp FuzzProcessor.cpp dspPrimitives.cpp $(HOTHOUSE_DIR)/src/hothouse.cpp
 C_INCLUDES = -I$(HOTHOUSE_DIR)/src/
 
 
