@@ -20,3 +20,15 @@ include $(SYSTEM_FILES_DIR)/Makefile
 
 # Global includes
 include $(HOTHOUSE_DIR)/src/Makefile
+
+# ── Host shared library target (macOS .dylib) ──────────────────────────────
+# use make dylib to creare the shared library
+DYLIB_CXX      = clang++
+DYLIB_CXXFLAGS = -std=c++17 -O2 -fPIC -dynamiclib
+DYLIB_SRCS     = hl-adapter.cpp FuzzProcessor.cpp dspPrimitives.cpp
+DYLIB_OUT      = build/libhyperf.dylib
+dylib:
+	$(DYLIB_CXX) $(DYLIB_CXXFLAGS) $(DYLIB_SRCS) -o $(DYLIB_OUT)
+clean-dylib:
+	rm -f $(DYLIB_OUT)
+.PHONY: dylib clean-dylib
